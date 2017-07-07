@@ -580,6 +580,10 @@ func (p *Pinhole) SavePNG(path string, width, height int, opts *ImageOptions) er
 		return err
 	}
 	defer file.Close()
+	return p.Save(file, width, height, opts)
+}
+
+func (p *Pinhole) Save(w io.Writer, width, height int, opts *ImageOptions) error {
 	return png.Encode(file, p.Image(width, height, opts))
 }
 
