@@ -73,22 +73,30 @@ func (l *line) Center() []float64 {
 	}
 }
 
+// Pinhole data structure
 type Pinhole struct {
 	lines []*line
 	stack []int
 }
 
+// New instance of Pinhole
 func New() *Pinhole {
 	return &Pinhole{}
 }
+
+// Begin block
 func (p *Pinhole) Begin() {
 	p.stack = append(p.stack, len(p.lines))
 }
+
+// End block
 func (p *Pinhole) End() {
 	if len(p.stack) > 0 {
 		p.stack = p.stack[:len(p.stack)-1]
 	}
 }
+
+// Rotate rotates by x, y, z
 func (p *Pinhole) Rotate(x, y, z float64) {
 	var i int
 	if len(p.stack) > 0 {
@@ -112,6 +120,7 @@ func (p *Pinhole) Rotate(x, y, z float64) {
 	}
 }
 
+// Translate translates on x, y, z
 func (p *Pinhole) Translate(x, y, z float64) {
 	var i int
 	if len(p.stack) > 0 {
@@ -127,6 +136,7 @@ func (p *Pinhole) Translate(x, y, z float64) {
 	}
 }
 
+// Scale scales by x, y, z
 func (p *Pinhole) Scale(x, y, z float64) {
 	var i int
 	if len(p.stack) > 0 {
@@ -145,6 +155,7 @@ func (p *Pinhole) Scale(x, y, z float64) {
 	}
 }
 
+// Colorize with provided color
 func (p *Pinhole) Colorize(color color.Color) {
 	var i int
 	if len(p.stack) > 0 {
@@ -154,6 +165,8 @@ func (p *Pinhole) Colorize(color color.Color) {
 		p.lines[i].color = color
 	}
 }
+
+// Center centers
 func (p *Pinhole) Center() {
 	var i int
 	if len(p.stack) > 0 {
@@ -205,6 +218,7 @@ func (p *Pinhole) Center() {
 	p.Translate(-x, -y, -z)
 }
 
+// DrawString at x, y, z
 func (p *Pinhole) DrawString(x, y, z float64, s string) {
 	if s != "" {
 		p.DrawLine(x, y, z, x, y, z)
@@ -212,12 +226,16 @@ func (p *Pinhole) DrawString(x, y, z float64, s string) {
 		p.lines[len(p.lines)-1].str = s
 	}
 }
+
+// DrawRect draws a rectangle
 func (p *Pinhole) DrawRect(minx, miny, maxx, maxy, z float64) {
 	p.DrawLine(minx, maxy, z, maxx, maxy, z)
 	p.DrawLine(maxx, maxy, z, maxx, miny, z)
 	p.DrawLine(maxx, miny, z, minx, miny, z)
 	p.DrawLine(minx, miny, z, minx, maxy, z)
 }
+
+// DrawCube draws a cube
 func (p *Pinhole) DrawCube(minx, miny, minz, maxx, maxy, maxz float64) {
 	p.DrawLine(minx, maxy, minz, maxx, maxy, minz)
 	p.DrawLine(maxx, maxy, minz, maxx, miny, minz)
@@ -233,11 +251,13 @@ func (p *Pinhole) DrawCube(minx, miny, minz, maxx, maxy, maxz float64) {
 	p.DrawLine(minx, miny, minz, minx, miny, maxz)
 }
 
+// DrawDot draws a dot at x, y, z with provided radius
 func (p *Pinhole) DrawDot(x, y, z float64, radius float64) {
 	p.DrawLine(x, y, z, x, y, z)
 	p.lines[len(p.lines)-1].scale = 10 / 0.1 * radius
 }
 
+// DrawLine draws a line
 func (p *Pinhole) DrawLine(x1, y1, z1, x2, y2, z2 float64) {
 	l := &line{
 		x1: x1, y1: y1, z1: z1,
@@ -247,6 +267,8 @@ func (p *Pinhole) DrawLine(x1, y1, z1, x2, y2, z2 float64) {
 	}
 	p.lines = append(p.lines, l)
 }
+
+// DrawCircle at x, y, z with provided radius
 func (p *Pinhole) DrawCircle(x, y, z float64, radius float64) {
 	var fx, fy, fz float64
 	var lx, ly, lz float64
@@ -282,12 +304,14 @@ func (p *Pinhole) DrawCircle(x, y, z float64, radius float64) {
 	}
 }
 
+// ImageOptions data struct
 type ImageOptions struct {
 	BGColor   color.Color
 	LineWidth float64
 	Scale     float64
 }
 
+// DefaultImageOptions instance
 var DefaultImageOptions = &ImageOptions{
 	BGColor:   color.White,
 	LineWidth: 1,
@@ -322,6 +346,7 @@ func (a byDistance) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
 
+// Image as RGBA
 func (p *Pinhole) Image(width, height int, opts *ImageOptions) *image.RGBA {
 	if opts == nil {
 		opts = DefaultImageOptions
@@ -509,6 +534,7 @@ func onscreen(w, h float64, x1, y1, x2, y2 float64) bool {
 	return true
 }
 
+// LoadObj from reader
 func (p *Pinhole) LoadObj(r io.Reader) error {
 	var faces [][][3]float64
 	data, err := ioutil.ReadAll(r)
@@ -574,17 +600,23 @@ func (p *Pinhole) LoadObj(r io.Reader) error {
 	return nil
 }
 
+// SavePNG to file path
 func (p *Pinhole) SavePNG(path string, width, height int, opts *ImageOptions) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+
+	defer func() {
+		_ = file.Close()
+	}()
+
 	return p.Save(file, width, height, opts)
 }
 
+// Save encodes a png to a writer
 func (p *Pinhole) Save(w io.Writer, width, height int, opts *ImageOptions) error {
-	return png.Encode(file, p.Image(width, height, opts))
+	return png.Encode(w, p.Image(width, height, opts))
 }
 
 // projectPoint projects a 3d point cartesian point to 2d screen coords.
